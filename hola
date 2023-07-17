@@ -42,4 +42,19 @@
 		
 		JOptionPane.showMessageDialog(null, "hola: "+name+" nos alegra que usted tenga "+num+" años");
 		JOptionPane.showMessageDialog(null, "su altura es de: "+height);
+
+
+		double x,y;
+		Scanner escaner=new Scanner(System.in);
+		x=escaner.nextDouble();
+		y=escaner.nextDouble();
+		double raiz=Math.sqrt(x+ y);
+		double round=Math.round(raiz);
+		System.out.println(round);
+		
+		escaner.close();
+		
+
+
+
 		**/
