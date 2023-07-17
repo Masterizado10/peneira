@@ -1,0 +1,45 @@
+/**
+		String name,food;
+		int age;
+		Scanner escaner= new Scanner(System.in);
+		
+		name = escaner.nextLine();
+		age = escaner.nextInt();
+		escaner.nextLine();
+		food = escaner.nextLine();
+		
+		System.out.println("mi nombre es: "+name);
+		System.out.println("mi edad es: "+age);
+		System.out.println("mi comida favorita es: "+food);
+		
+		**/
+		/**
+		double friendo;
+		double friends;
+		friends=10;
+		
+		friendo=(double) friends/3;
+		
+		if (friends>=10) {
+			System.out.println("se ejecuto el if, felicidades.");
+		}
+		
+		
+		System.out.println(friendo);
+		**/
+		/**
+		int i,c=0;
+		for (i=0;i<=10;i++) {
+			c+=1;
+			
+		}
+		System.out.println(c);
+		
+		
+		String name= JOptionPane.showInputDialog("INGRESE SU NOMBRE: ");
+		int num= Integer.parseInt(JOptionPane.showInputDialog("INGRESE SU EDAD: "));
+		double height =Double.parseDouble(JOptionPane.showInputDialog("INGRESE SU ALTURA: "));
+		
+		JOptionPane.showMessageDialog(null, "hola: "+name+" nos alegra que usted tenga "+num+" años");
+		JOptionPane.showMessageDialog(null, "su altura es de: "+height);
+		**/
