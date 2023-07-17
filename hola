@@ -54,7 +54,10 @@
 		
 		escaner.close();
 		
-
+		Random numero_azar=new Random ();
+		double x = numero_azar.nextDouble(2);
+		System.out.println(x);
+		
 
 
 		**/
