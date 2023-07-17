@@ -57,7 +57,17 @@
 		Random numero_azar=new Random ();
 		double x = numero_azar.nextDouble(2);
 		System.out.println(x);
+
+			int pene=28;
+		switch(pene) {
+			case 28:
+				System.out.println("es una cosa descomunal");
+				break;
+			case 18:
+				System.out.println("es promedio");
+			default:
+				System.out.println("usted no tiene pene");
+				
+		}
 		
-
-
 		**/
