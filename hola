@@ -101,10 +101,30 @@
 			System.out.println("saliste del juego");
 			
 		}
+
+		Scanner escaner=new Scanner(System.in);
+		int columnas,filas;
+		System.out.println("ingrese numero de columnas");
+		columnas=escaner.nextInt();
+		System.out.println("ingrese numero de filas");
+		filas=escaner.nextInt();
+		escaner.nextLine();
+		System.out.println("ingrese simbolo que usara");
+		String simb=escaner.nextLine();
 		
-	
-
-
-
 		
+		for (int i=0;i<=filas;i++) {
+			System.out.println();
+		
+			for (int j=0;j<=columnas;j++) {
+				System.out.print(simb);
+				
+			}
+		}
+		
+		String sentence = "The data of Branch 1 are correct - true"; 
+		String[] elements = sentence.split(" ");
+		System.out.println(elements[0]);
+
+
 		**/
