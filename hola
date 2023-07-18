@@ -69,5 +69,31 @@
 				System.out.println("usted no tiene pene");
 				
 		}
+		Scanner escaner=new Scanner(System.in);
+		String n = escaner.nextLine();
+		float total = 0;
+		int cant= 0;
+		int full=0,c;
+		for (int i =0;i< n.length();i++) {
+			System.out.println(n.length());
+			System.out.println("Ingree temperatura: ");
+			c = escaner.nextInt();
+			
+			if (c>=25 && c<50) {
+				total+=c;
+				cant++;	
+			}
+			
+			full++;
+			
+			
+		}
+		System.out.println(cant);
+		System.out.println(full);
+		escaner.close();
+	
+
+
+
 		
 		**/
