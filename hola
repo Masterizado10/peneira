@@ -91,6 +91,17 @@
 		System.out.println(cant);
 		System.out.println(full);
 		escaner.close();
+
+		Scanner escaner= new Scanner(System.in);
+		String text= escaner.next();
+		if (!text.equals("q")&&!text.equals("Q")) {
+			System.out.println("Sigues jugando");
+		}
+		else {
+			System.out.println("saliste del juego");
+			
+		}
+		
 	
 
 
