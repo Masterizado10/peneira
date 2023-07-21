@@ -163,5 +163,88 @@
 		System.out.println(cars.length);
 		System.out.println(cars[0].length);
 
+
+
+
+
+
+
+
+		Scanner escan= new Scanner(System.in);
+		float num=escan.nextFloat();
+		float num2=escan.nextFloat();
+		de_apoco ord=new de_apoco();
+		float def=ord.de_apoco(num, num2);
+		
+		cuadrado cuad=new cuadrado(def);
+		
+		
+		
+		String result1=cuad.tostring();
+		System.out.println(result1);
+		
+		System.out.println(cuad.get_cuadrado());
+	
+		
+		
+		
+		
+	}
+	float de_apoco(float num,float num2){
+		float may=0;
+		if (num>num2){
+			may=num;
+			
+		}
+		
+		
+		return may;
+		
+		
+	}
+		
+}		
+		
+class cuadrado{
+	private static float lado;
+	cuadrado(float num){
+		lado=num;
+		
+}		
+	cuadrado(){
+		lado=0;
+	}
+	
+	void set_cuadrado(float num){
+		
+		lado=num;
+	}
+	
+	float get_cuadrado(){
+		return lado;
+	}
+	
+	float superficie(){
+		return lado*lado;
+		
+	}
+	
+	
+	String tostring(){
+		return "la superficie de: "+lado +" es igual a "+superficie();
+		
+		
+	}
+
+
+
+
+	
+
+	
+	
+	
+
+
 		
 		**/
