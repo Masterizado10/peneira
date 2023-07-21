@@ -239,6 +239,71 @@ class cuadrado{
 
 
 
+
+
+CIRCULO:
+
+	Scanner escan=new Scanner(System.in);
+		
+		float num1=escan.nextFloat();
+		float num2=escan.nextFloat();
+		de_apoco may = new de_apoco();
+		float def=may.mayor(num1, num2);
+		
+		circulo circi=new circulo(def);
+		System.out.println(circi.tostring());
+		
+		escan.close();
+	
+	
+	
+	
+	public float mayor(float num1,float num2) {
+		float may;
+		if (num1>num2) {
+			
+			may=num1;
+		}
+		else {
+			may=num2;
+		}
+		return may;
+	}
+	
+	
+		
+
+}
+
+}
+
+class circulo{
+	private float circu=0;
+	
+	public circulo(float num){
+		circu=num;
+		
+	}
+	public void setCirc(float num) {
+		
+		circu=num;
+		
+	}
+	public double superficie() {
+		
+		return 2*3.14*(circu/2);
+		
+	}
+	
+	public String tostring() {
+		
+		return "la superficie del circulo de radio "+circu/2+" es de "+superficie();
+		
+	}
+	
+
+}
+
 	
 
 	
