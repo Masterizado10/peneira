@@ -298,18 +298,62 @@ class circulo{
 	public String tostring() {
 		
 		return "la superficie del circulo de radio "+circu/2+" es de "+superficie();
-		
 	}
-	
 
 }
 
-	
+		Boolean a=true;
+		Boolean b =false;
+		
+		Boolean como=a.equals(b);
+		
 
-	
-	
-	
+		System.out.println(como);
 
+
+
+		***********
+		ArrayList<String> pene=new ArrayList<String>();
+		pene.add("hola");
+		pene.add("q ace");
+		pene.set(0, "malos dias");
+		
+		for (int i=0;i<pene.size();i++) {
+			System.out.println(pene.get(i));
+			
+			
+		}
+
+
+!""""""""""""""""""""""""
+		ArrayList<ArrayList> groceries=new ArrayList();
+		
+		
+		ArrayList<String> bakerylist=new ArrayList<String>();
+		bakerylist.add("donas de manteca");
+		bakerylist.add("acelga");
+		bakerylist.add("torta mousse de rucula");
+		
+		ArrayList<String> foodlist=new ArrayList<String>();
+		foodlist.add("sopa");
+		foodlist.add("fideos");
+		foodlist.add("sushi");
+		
+		
+		ArrayList<String> drinks= new ArrayList<String>();
+		drinks.add("cocacola");
+		drinks.add("agua");
+		drinks.add("limon");
+		
+		
+		groceries.add(bakerylist);
+		groceries.add(foodlist);
+		groceries.add(drinks);
+		System.out.println(groceries);
+		System.out.println(groceries.get(0).get(1));
+		
+		
+		
 
 		
 		**/
