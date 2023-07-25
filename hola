@@ -353,7 +353,30 @@ class circulo{
 		System.out.println(groceries.get(0).get(1));
 		
 		
-		
-
-		
 		**/
+
++++++++++++++++++++++++++++++++++++++
+
+		ArrayList<String> animals= new ArrayList<String>();
+		animals.add("canario");
+		animals.add("gato");
+		animals.add("perro");
+		for (String i:animals) {
+			System.out.println(i);
+		}
++++++++++++++++++++++++++++++++++++++
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
