@@ -367,8 +367,8 @@ class circulo{
 +++++++++++++++++++++++++++++++++++++
 
 public static void main(String[] args) {
+	Static int a,i;
 		
-		//String [] animals= {"perro","gato","mono"};
 		a=5;
 		hola();
 		System.out.println(i);
