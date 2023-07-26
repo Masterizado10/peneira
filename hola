@@ -381,7 +381,20 @@ public static void main(String[] args) {
 
 
 +++++++++++++++++++++++++++++++++++++
-
+		int z=hello(5);
+		System.out.println(z);
+		
+	}
+	
+	public static int hello(int num) {
+		
+		
+		
+		num1=num;
+		
+		return num1;
+		
+	}
 
 
 
