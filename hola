@@ -472,6 +472,27 @@ static int saldo,may,num1,num2;
 		return "el saldo mayor es de "+saldo;
 	}
 	
+	public class de_apoco 
+{
+
++++++++++++++++++++++++++++++++++++++++
+	public static void main(String[] args) {
+		double suma=add(3,5,8);
+		System.out.println(suma);
+		
+	}
 	
+	public static int add(int num1,int num2) {
+		return num1+num2;
+	}
+	public static int add(int num1,int num2,int num3) {
+		return num1+num2+num3;
+		
+	}
+	public static double add(double num1,double num2,double num3,double num4) {
+		return num1+num2+num3+num4;
+	}
+
+}
 
 
