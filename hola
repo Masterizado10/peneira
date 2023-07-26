@@ -434,6 +434,44 @@ public static void main(String[] args) {
 	
 +++++++++++++++++++++++++++++++++++++++
 
-
+static int saldo,may,num1,num2;
+	public static void main(String[] args) {
+		Scanner escaner=new Scanner(System.in);
+		System.out.println("ingrese dos numeros: ");
+		num1=escaner.nextInt();
+		num2=escaner.nextInt();
+		ordenar();
+		hello(may);
+		int total=getHello();
+		String printi=tostring();
+		System.out.println(printi);
+	}
+	
+	
+	public static void ordenar() {
+		if (num1>num2) {
+			may=num1;
+		}
+		else {
+			may=num2;
+		}
+		
+	}
+	
+	
+	public static void hello(int num) {
+		saldo=num;
+	}
+	
+	public static int getHello() {
+		return saldo;
+		
+	}
+	
+	public static String tostring() {
+		return "el saldo mayor es de "+saldo;
+	}
+	
+	
 
 
