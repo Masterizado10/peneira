@@ -494,5 +494,43 @@ static int saldo,may,num1,num2;
 	}
 
 }
+++++++++++++++++++++++++++++++++++++++++
+public class de_apoco 
+{
+	
+	public static void main(String[] args) {
+		
+		car a = new car("santi",20);
+		car b = new car("pedro",40);
+		
+		System.out.println(a.toString());
+		System.out.println(b.toString());
+		
+}
+}
 
+class car{
+	
+	public String nombre;
+	public int edad;
+	
+	public car(String nom,int num1) {
+		this.nombre = nom;
+		this.edad  =  num1;
+	}
+	
+	public String getName(){
+		return nombre;
+	}
+	
+	public int getAge() {
+		return edad;
+	}
+	
+	public String toString() {
+		
+		return "el nombre del sujeto es "+nombre+" y su edad es de "+edad;
+	}
+}
+	
 
