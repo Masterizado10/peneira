@@ -569,11 +569,83 @@ class humano{
 	}
 }
 
+++++++++++++++++++++++++++++++++++++++ CUANDO VARIABLE LOCAL
+
+import java.util.Random;
+import java.util.ArrayList;
+import java.util.Scanner;
 
 
 
 
+public class de_apoco 
+{
+	
+	public static void main(String[] args) {
+		humano human1=new humano("ricardo",70);
+		humano human2=new humano("luis",98);
+		
+}
+}
 
+class humano{
+	
+	
+	humano(String name,int edad){
+		String nombre;
+		int age;
+		nombre=name;
+		age=edad;
+		comer (nombre,age);
+		
+		
+	}
+	
+	public void comer(String nombre,int age) {
+		
+		System.out.println(nombre+" esta comiendo");
+		System.out.println("su edad es de "+age);
+		
+	}
+
++++++++++++++++++++++++++++++++++++++++otro local
+import java.util.Random;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+
+
+
+public class de_apoco 
+{
+	
+	public static void main(String[] args) {
+		Random rand =new Random();
+		float azar=rand.nextFloat()+1;
+		random randi=new random(azar);
+		
+		
+		
+	}
+		
+}
+
+
+class random{
+	
+	random(float azares){
+		float azarr;
+		azarr=azares;
+		getAzar(azarr);
+	}
+	public void getAzar(float azarr){
+		System.out.println(azarr);
+	}
+	
+
+
+	
+}
 
 
 
