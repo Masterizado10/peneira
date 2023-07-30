@@ -532,5 +532,59 @@ class car{
 		return "el nombre del sujeto es "+nombre+" y su edad es de "+edad;
 	}
 }
+
+
+import java.util.Random;
+import java.util.ArrayList;
+import java.util.Scanner;
+
+
+
+
+public class de_apoco 
+{
+	
+	public static void main(String[] args) {
+
+		humano human1=new humano("ricardo",70);
+		humano human2=new humano("luis",98);
+		human1.comer();
+
+}
+}
+
+class humano{
+	String nombre;
+	int age;
+	
+	humano(String name,int edad){
+		nombre=name;
+		age=edad;
+
+	}
+	
+	public void comer() {
+		
+		System.out.println(nombre+" esta comiendo");
+	}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 	
 
