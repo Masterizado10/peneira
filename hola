@@ -646,6 +646,30 @@ class random{
 
 	
 }
++++++++++++++++++++++++++++++++++++++++++++++
+public class de_apoco 
+{
+	
+	public static void main(String[] args) {
+		System.out.println("Lectura de numeros en un archivo de texto...");
+		 File f = new File("pene.txt");
+		 try (Scanner sc = new Scanner(f)) 
+		 {
+			 while (sc.hasNextLine())
+			 {
+				 String num = sc.nextLine();
+				 System.out.println(num);
+			 }
+		 } 
+		 catch (FileNotFoundException ex) 
+		 {
+			 System.out.println("No existe el archivo...");
+		 }
+
+		
+	}
+		
+}
 
 
 
