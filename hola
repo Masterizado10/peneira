@@ -671,6 +671,44 @@ public class de_apoco
 		
 }
 
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+public class de_apoco 
+{
+
+	public static void main(String[] args) {
+		
+		Car auto= new Car("Mustang");
+		Car auto2=new Car("Ferrari");
+		Garage vehiculos=new Garage();
+		vehiculos.Park(auto);
+		vehiculos.Park(auto2);
+		
+	}
+
+}
+
+class Car{
+	public String automovil;
+	int c;
+	Car(String modelo){
+		
+		automovil=modelo;
+		c++;
+		
+	}
+	
+}
+	
+class Garage{
+	
+	void Park(Car auto){
+		System.out.println("el auto "+auto.automovil);
+		System.out.println(auto.c);
+	}
+	
+}
+
 
 
 
