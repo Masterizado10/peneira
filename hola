@@ -708,9 +708,36 @@ class Garage{
 	}
 	
 }
+++++++++++++++++++++++++++++++++++++++++++ static in oop
 
 
 
+public class de_apoco 
+{
+
+	public static void main(String[] args) {
+		
+		Amigos amigo1= new Amigos("Pedro");
+		Amigos amigo2=new Amigos("Juan");
+		System.out.println(Amigos.cant_amigos);
+		System.out.println(Amigos.cantamiguis());
+	}
+
+}
+
+class Amigos{
+	static int cant_amigos=0;
+	String amigos;
+	public Amigos(String amigo){
+		amigos=amigo;
+		cant_amigos++;
+		
+	}
+	static String cantamiguis(){
+		return "tengo " +cant_amigos;
+	}
+		
+}
 
 
 
