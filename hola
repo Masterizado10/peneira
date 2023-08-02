@@ -739,6 +739,76 @@ class Amigos{
 		
 }
 
++++++++++++++++++++++++++++++++++++++++++++++++++
+
+public class de_apoco 
+{
+
+	public static void main(String[] args) {
+		auto auto = new auto("mustang");
+		vehiculo garage=new vehiculo();
+		garage.go(auto);
+		bicicleta bici=new bicicleta("Venzo");
+		vehiculo garage1=new vehiculo();
+		garage1.stop(bici);
+		System.out.println(bici.speed);
+		System.out.println(bici.ruedas);
+		System.out.println(auto.ruedas);
+	
+	}
+
+}
+
+class vehiculo  {
+	double speed=50;
+	
+	void go(auto auto) {
+		System.out.println(auto.name+" se mueve");
+		
+	}
+	
+	void stop(bicicleta bici) {
+		System.out.println(bici.name_bici+" esta detenido");
+	}
+	
+		
+}
+
+class bicicleta extends vehiculo{
+	String name_bici;
+	int ruedas=5;
+	bicicleta(String name){
+		name_bici=name;
+	System.out.println(speed);//se la puede usar en cualquier lado	
+	}
+	
+}
+	
+class auto extends vehiculo {
+	int ruedas= 4;
+	String name;
+	
+	auto(String nombre){
+		name=nombre;
+		
+	}
+
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
