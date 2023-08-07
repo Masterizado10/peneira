@@ -877,7 +877,40 @@ class hero extends persona{
 	}
 	
 }
++++++++++++++++++++++++++++++++++++++++++++++++++
+public class de_apoco 
+{
 
+	public static void main(String[] args) {
+		
+		Car auto1=new Car("eubrolet");
+		auto1.setName("santi");
+		System.out.println(auto1.getName());
+		
+	}
+
+}
+
+class Car{
+	private String name;
+	
+	
+	Car(String nombre){
+		
+		setName(nombre);
+	}
+	
+	void setName(String nombre) {
+		name=nombre;
+		
+		
+	}
+	
+	String getName() {
+		return name;
+	}
+	
+}
 
 
 
