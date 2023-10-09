@@ -1036,6 +1036,160 @@ def test():
 if __name__ == '__main__':
     test()
 
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++
+class Venta:
+    def __init__(self,nombre,tipo,marca,cuotas,monto):
+        self.nombre=nombre
+        self.tipo=tipo
+        self.marca =marca
+        self.cuotas=cuotas
+        self.monto=monto
+
+    def __str__(self):
+        cad='{} {} {} {} {}'
+        return cad.format(self.nombre,self.tipo,self.marca,self.cuotas,self.monto)
+
+
+def mostrar_menu():
+    print("concesionaria de autos")
+    print("1. Cargar")
+    print("2. Mostrar")
+    print("3. Buscar")
+    print("4. Generar matriz")
+    print("5. Generar archivo")
+    print("6. Cuotas Pagas")
+    opc=int(input("ingrese opcion: "))
+    return opc
+
+
+def add_in_order(v,reg):
+    izq,der=0,len(v)-1
+    while izq<=der:
+        c=(izq+der) // 2
+        if reg.nombre ==v[c].nombre:
+            pos =c
+            break
+        if  reg.nombre < v[c].nombre:
+            der=c-1
+        else:
+            izq=c+1
+    if izq > der:
+        pos = izq
+
+    v[pos:pos] = [reg]
+
+def cargar_vector(v,n):
+    noms=["Juan","Ana","Pedro","Luz"]
+    for i in range(n):
+        nombre = random.choice(noms)+str(i)
+        tipo = random.randint(0, 3)
+        marca = random.randint(0, 15)
+        cuotas = random.randint(10, 500)
+        monto = random.randint(1000, 50000)
+        reg = Venta(nombre, tipo, marca, cuotas, monto)
+        add_in_order(v, reg)
+
+def mostrar_arreglo(v):
+    for i in range(len(v)):
+        print(v[i])
+
+def buscar_nombre(v,nom):
+    izq,der = 0, len(v)-1
+    while izq <=der:
+        c=(der+izq)//2
+        if nom ==v[c].nombre:
+            return c
+        if nom <= v[c].nombre:
+            der=c-1
+        else:
+            izq=c+1
+    return -1
+
+
+def validar_mayor_que(inf):
+    num=inf
+    while num <= inf:
+        num=int(input("ingrese numero mayor al indicado"))
+    return num
+
+def matriz(v):
+    ma=[[0]*15 for fila in range(4)]
+    for reg in v:
+        ma[reg.tipo][reg.marca-1]+=reg.monto
+    return ma
+
+def mostrar_matriz(ma):
+    for f in range(len(ma)):
+        for c in range(len(ma[0])):
+            if ma[f][c] != 0:
+                print("en el tipo de pago "+str(f)+" con marcas de "+str(c+1)+" hay acumulados "+str(ma[f][c]))
+
+
+def generar_archivo(v, num, fd):
+    m=open(fd,"wb")
+    for reg in v:
+        if reg.monto > num and reg.tipo !=2:
+            pickle.dump(reg,m)
+    m.close()
+
+
+def mostrar_archivo(fd):
+    if not os.path.exists(fd):
+        print("no existe!")
+        return
+    suma,cont=0,0
+    m=open(fd,"rb")
+    tam=os.path.getsize(fd)
+
+    while m.tell() < tam:
+        reg=pickle.load(m)
+        print(reg)
+        suma+=reg.monto
+        cont+=1
+    m.close()
+
+
+def principal():
+    v = []
+    opcion =-1
+    while opcion != 0:
+        opcion = mostrar_menu()
+        if opcion == 1:
+            n = 5
+            cargar_vector(v, n)
+
+        else:
+            if len(v)==0:
+                print("el vector no esta cargado")
+            else:
+                if opcion==2:
+                    mostrar_arreglo(v)
+                elif opcion ==3:
+                    nom=input("ingrese nombre del cliente")
+                    pos=buscar_nombre(v,nom)
+                    if pos ==-1:
+                        print("el elemento no existe")
+                    else:
+                        x = validar_mayor_que(-1)
+                        v[pos].cuotas +=x
+                        print("cliente encontrado",v[pos])
+                elif opcion ==4:
+                    ma=matriz(v)
+                    mostrar_matriz(ma)
+                elif opcion == 5:
+                    fd='ventas.dat'
+                    print("ingrese monto mayor")
+                    num=validar_mayor_que(0)
+                    generar_archivo(v,num,fd)
+                    mostrar_archivo(fd)
+                elif opcion == 6:
+
+
+
+
+if __name__ =="__main__":
+    principal()
 
 
 
