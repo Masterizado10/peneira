@@ -1190,10 +1190,458 @@ def principal():
 
 if __name__ =="__main__":
     principal()
++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++
++++++++++++++++++++++++++++++++++++
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+r = ''
+        r += str(self.ticket)
+        r += ','+str(self.patente)
+        r += ',' + str(self.vehiculo)
+        r += ',' + str(self.forma_de_pago)
+        r += ',' + str(self.cabina)
+        r += ','
+        r += str(self.km)
+
+        return r
+
+import pickle
+import os.path
+import Clase_ticket
+
+
+def validar_numero(inf):
+    min = inf
+
+    while min <= inf and len(str(min)) <= 10:
+        min = int(input("Ingrese numero de Ticket  mayor a cero!!:"))
+    return min
+
+
+def validate_type(mn=0, mx=2):
+    print()
+    vehiculo = int(input("Ingrese un dígito entre 0 y 2 que indica el tipo de vehículo (0: motocicleta, 1: automóvil, 2: camión)"))
+    while vehiculo < mn or vehiculo > mx:
+        vehiculo = int(input("No olvide que el vehículo DEBE ser entre 0 y 2"))
+    return vehiculo
+
+
+def validate_type_pago(mn=1, mx=2):
+    print()
+    pago = int(input("Ingrese un dígito 1 o 2 que indica la forma de pago (1: manual, 2 telepeaje)."))
+    while pago< mn or pago > mx:
+        pago = int(input("No olvide que el pago DEBE ser entre (1: manual, 2 telepeaje)"))
+    return pago
+
+
+def validate_type_cabina(mn=0, mx=4):
+    print()
+    cabina = int(input("Ingrese un dígito entre 0 y 4 que indica el país donde está la cabina que hizo el cobro (0: Argentina - 1: Bolivia - 2: Brasil - 3: Paraguay - 4: Uruguay).  "))
+    while cabina < mn or cabina > mx:
+        cabina = int(input("No olvide que la cabina DEBE ser un numero entre (0: Argentina - 1: Bolivia - 2: Brasil - 3: Paraguay - 4: Uruguay)"))
+    return cabina
+
+
+def validar_patente():
+    print()
+    patente1 = input("Ingrese patente: ").upper()
+
+    while patente1.isalnum()==False:
+        patente1 = input("Solo caracteres alfanuméricos!!").upper()
+    """
+    while len(patente1) > 7:
+        patente1=input("ingrese patente de hasta 7 caracteres: ")
+   print(len(patente1))
+    """
+
+
+    return str(patente1)
+
+
+def validar_km(inf):
+    km = inf
+
+    while km <= inf:
+        print()
+        km = int(input("Ingrese cantidad de km recorridos mayor a cero:"))
+        if km <= inf:
+            print("Recuerde que la cantidad de km debe ser positiva")
+    return km
+
+
+def crear_archivo():
+
+    with open('peajes75.bin', 'wb') as f:
+        cont_lineas = 0
+        arch = "peajes-tp4.csv"
+        if not os.path.exists(arch):
+            print("Archivos perdidos, por favor reingrese el fichero en la carpeta del proyecto")
+            return
+        #aplicar readline
+        m = open(arch, mode="rt", encoding="utf8")
+        for linea in m:
+            if cont_lineas < 2:
+                pickle.dump(linea,f)
+                cont_lineas += 1
+
+            else:
+                if linea[-1] == "\n":
+                    linea = linea[:-1]
+
+                cadena = linea.split(",")
+
+                ticket = cadena[0]
+                patente = cadena[1]
+                vehiculo = cadena[2]
+                forma_de_pago = cadena[3]
+                cabina = cadena[4]
+                km = cadena[5]
+
+                Ticket = Clase_ticket.Ticket(ticket,patente, vehiculo,forma_de_pago,cabina,km)
+                pickle.dump(Ticket, f)
 
 
 
+def cargar_datos():
+    #vehiculo=["avion"]
+    with open('peajes75.bin', 'ab') as f:
+        ticket = (validar_numero(0))
+        patente = validar_patente()
+        vehiculo = validate_type()
+        forma_de_pago = validate_type_pago()
+        cabina = validate_type_cabina()
+        km = (validar_km(0))
 
+        Ticket = Clase_ticket.Ticket(ticket, patente, vehiculo, forma_de_pago, cabina, km)
+        pickle.dump(Ticket, f)
+
+
+def crear():
+    contador=0
+
+    if not os.path.exists("peajes75.bin"):
+        print("No existe el archivo.")
+        return
+    with open('peajes75.bin', 'rb') as f:
+        while True:
+            try:
+                if contador < 2:
+                    pac=pickle.load(f)
+                    print(pac)
+                    contador += 1
+                # Leer un objeto Ticket del archivo
+                else:
+                    ticket = pickle.load(f)
+                    print((ticket))
+            except EOFError:
+                # Salir del bucle si se ha alcanzado el final del archivo
+                break
+
+
+def patente(patente):
+    #if patente[0:7].isalpha():
+     #   p = ""
+      #  return p esto no se para que estaba
+
+    if len(patente) == 7:
+        if (patente[0:2].isalpha() and patente[2:5].isdigit() and patente[5:].isalpha()):
+
+            p = "Argentina"
+
+            return p
+
+        elif patente[0:2].isalpha() and patente[2:].isdigit():
+
+            p = "Bolivia"
+            return p
+
+        elif patente[0:4].isalpha() and patente[4:].isdigit():
+
+            p = "Paraguay"
+            return p
+        elif patente[0:3].isalpha() and patente[3:].isdigit():
+
+            p = "Uruguay"
+            return p
+        elif patente[0:3].isalpha() and patente[3].isdigit() and patente[4].isalpha() and patente[5:].isdigit():
+
+            p = "Brasil"
+            return p
+        else:
+            p = "Otros"
+            return p
+
+    elif len(patente) < 7:
+        if patente[0:4].isalpha() and patente[4:].isdigit() and patente[5:] != "":
+            p = "Chile"
+            return p
+        else:
+            p = "Otros"
+            return p
+
+    elif len(patente) > 7:
+        p = "Otros"
+        return p
+
+
+def buscar_patente():
+
+    if not os.path.exists("peajes75.bin"):
+        print('El archivo no existe...')
+        print()
+        return
+
+    tbm = os.path.getsize("peajes75.bin")
+    m = open("peajes75.bin", 'rb')
+
+    print('Contenido del archivo', FD, '...')
+
+    patente = input("Ingrese patente a buscar").upper()
+    cont=0
+    while m.tell() < tbm:
+        ticket = pickle.load(m)
+        if cont < 2:
+            cont += 1
+
+        else:
+            if ticket.patente == patente:
+                print("patentes: "+str(ticket))
+
+    #agregar los encuentros
+
+    m.close()
+    print()
+
+
+def buscar_ticket():
+    if not os.path.exists("peajes75.bin"):
+        print('El archivo no existe...')
+        print()
+        return
+
+    tbm = os.path.getsize(FD)
+    m = open("peajes75.bin", 'rb')
+
+    print('Contenido del archivo', FD, '...')
+
+    tict = int(input("Ingrese ticket a buscar"))
+    cont = 0
+
+    while m.tell() < tbm:
+        pac = pickle.load(m)
+        if cont < 2:
+            cont += 1
+
+        else:
+            if int(pac.ticket) == tict:
+                print("Si existe ")
+                print(pac)
+                return
+
+
+    print("No existe registro con ese codigo de ticket")
+
+    m.close()
+    print()
+
+
+def matrix():
+    pass
+
+def conteo():
+
+    if not os.path.exists("peajes75.bin"):
+        print('El archivo no existe...')
+        print()
+        return
+    tbm = os.path.getsize(FD)
+    m = open("peajes75.bin", 'rb')
+
+    print('Contenido del archivo', FD, '...')
+    cont = 0
+    cf, cc = 3, 5
+    cant = [cc * [0] for f in range(cf)]
+
+    while m.tell() < tbm:
+
+        ticket = pickle.load(m)
+
+
+
+        if cont < 2:
+            cont += 1
+
+        else:
+            f = int(ticket.vehiculo)
+            c = int(ticket.cabina)
+            cant[f][c] += 1
+
+    for f in range(len(cant)):
+        for c in range(len(cant[0])):
+            if cant[f][c] != 0:
+                print('Vehiculo', f, 'Pais', c, 'Cantidad:', cant[f][c])
+
+
+    m.close()
+    print()
+
+
+def conteo_por_filas():
+    if not os.path.exists("peajes75.bin"):
+        print('El archivo no existe...')
+        print()
+        return
+    tbm = os.path.getsize(FD)
+    m = open("peajes75.bin", 'rb')
+
+    print('Contenido del archivo', FD, '...')
+    cont = 0
+    cf, cc = 3, 5
+    cant = [cc * [0] for f in range(cf)]
+
+    while m.tell() < tbm:
+
+        ticket = pickle.load(m)
+
+
+
+        if cont < 2:
+            cont += 1
+
+        else:
+            f = int(ticket.vehiculo)
+            c = int(ticket.cabina)
+            cant[f][c] += 1
+
+    for f in range(cf):
+        for c in range(cc):
+            if cant[f][c] != 0:
+                print('Vehiculo', f, 'Pais', c, 'Cantidad:', cant[f][c])
+    m, n = len(cant), len(cant[0])
+    print()
+    print('Cantidades vendidas por cada vendedor')
+    for f in range(m):
+        ac = 0
+        for c in range(n):
+            ac += cant[f][c]
+        print('Vehiculo', f, '\t- Cantidad por tipo de vehiculo:', ac)
+
+    for c in range(n):
+        ac = 0
+        for f in range(m):
+            ac += cant[f][c]
+        print(' Cabina', c, '\t- Cantidad por cabina:', ac)
+
+
+def promedio():
+    m = open("peajes75.bin", 'rb')
+
+    print('Contenido del archivo', FD, '...')
+    tbm = os.path.getsize(FD)
+
+    cont = 0
+    cant=0
+    total = 0
+    while m.tell() < tbm:
+        ticket = pickle.load(m)
+        if cont < 2:
+            cont += 1
+
+        else:
+            total += int(ticket.km)
+            cant += 1
+    promedio = total/cant
+    print(promedio)
+
+
+    m.close()
+    print()
+    return promedio
+
+
+def calcular(prom,v):
+    m = open("peajes75.bin", 'rb')
+    print('Contenido del archivo', FD, '...')
+    tbm = os.path.getsize(FD)
+
+    cont = 0
+    while m.tell() < tbm:
+        ticket = pickle.load(m)
+        if cont < 2:
+            cont += 1
+
+        else:
+            if int(ticket.km) > prom:
+                v.append(ticket)
+
+    return v
+
+def ordenamiento(v):
+    n = len(v)
+
+    h = 1
+    while h <= n // 9:
+        h = 3 * h + 1
+    while h > 0:
+        for j in range(h, n):
+            y = v[j]
+            k = j - h
+            while int(k) >= 0 and int(y.km) < int(v[k].km):
+                 v[k + h] = v[k]
+                 k -= h
+            v[k + h] = y
+        h //= 3
+
+
+def test():
+    global FD
+    FD = "peajes75.bin"
+    op =0
+    v = []
+    while op != 10:
+        op=int(input("ingrese opcion a realizar: "))
+        if op == 1:
+
+            print("esta seguro que desea crear un nuevo arreglo? 1:SI 2:NO")
+            decision = int(input("ingrese opcion: "))
+            if decision == 1:
+                crear_archivo()
+
+            else:
+                continue
+
+        elif op == 2:
+            cargar_datos()
+            #mostrar_archivo(v)
+
+        elif op == 3:
+            crear()
+
+        elif op == 4:
+            buscar_patente()
+
+        elif op == 5:
+            buscar_ticket()
+
+        elif op == 6:
+            conteo()
+
+        elif op == 7:
+            conteo_por_filas()
+
+        elif op == 8:
+            v = []
+            prom = promedio()
+            v = calcular(prom, v)
+
+            ordenamiento(v)
+            for i in range(len(v)):
+                print(str(v[i])+" "+str(patente(v[i].patente)))
+
+
+if __name__ == '__main__':
+    test()
 
 
 
