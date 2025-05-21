@@ -1,0 +1,457 @@
+import numpy as np
+import pandas as pd
+import matplotlib.pyplot as plt
+from collections import defaultdict
+from typing import List, Dict, Tuple, Optional
+import heapq
+import time
+
+
+class Evento:
+    """Clase base para los eventos en la simulación."""
+
+    def __init__(self, tiempo: float):
+        self.tiempo = tiempo
+
+    def __lt__(self, other):
+        return self.tiempo < other.tiempo
+
+
+class EventoLlegada(Evento):
+    """Evento de llegada de un cliente al sistema."""
+
+    def __init__(self, tiempo: float, tipo_servicio: str, id_cliente: int):
+        super().__init__(tiempo)
+        self.tipo_servicio = tipo_servicio
+        self.id_cliente = id_cliente
+
+
+class EventoSalida(Evento):
+    """Evento de salida de un cliente del sistema."""
+
+    def __init__(self, tiempo: float, tipo_servicio: str, id_servidor: int, id_cliente: int):
+        super().__init__(tiempo)
+        self.tipo_servicio = tipo_servicio
+        self.id_servidor = id_servidor
+        self.id_cliente = id_cliente
+
+
+class SimulacionBanco:
+    """Clase principal para la simulación del banco."""
+
+    def __init__(self, parametros: Dict):
+        # Parámetros de la simulación
+        self.parametros = parametros
+
+        # Cola de eventos ordenada por tiempo
+        self.eventos = []
+
+        # Estado del sistema
+        self.estado_sistema = []
+        self.clientes_en_cola = defaultdict(list)
+        self.servidores_ocupados = {}
+        self.tiempo_actual = 0.0
+
+        # Estadísticas
+        self.estadisticas = {
+            servicio: {
+                'clientes_totales': 0,
+                'tiempo_espera_total': 0.0,
+                'tiempo_inicio_servicio': {},
+                'tiempo_ocupacion_total': 0.0,
+                'ultimo_cambio_estado': 0.0,
+                'servidores_ocupados_actual': 0
+            } for servicio in parametros['servicios']
+        }
+
+        # Inicialización de servidores
+        for servicio, num_servidores in parametros['num_servidores'].items():
+            for i in range(num_servidores):
+                self.servidores_ocupados[(servicio, i)] = False
+
+    def generar_tiempo_entre_llegadas(self, servicio: str) -> float:
+        """Genera el tiempo entre llegadas según distribución exponencial."""
+        tasa_llegada = self.parametros['tasas_llegada'][servicio]
+        return np.random.exponential(1.0 / tasa_llegada)
+
+    def generar_tiempo_servicio(self, servicio: str) -> float:
+        """Genera el tiempo de servicio según distribución exponencial."""
+        tasa_servicio = self.parametros['tasas_servicio'][servicio]
+        return np.random.exponential(1.0 / tasa_servicio)
+
+    def programar_evento_llegada(self, servicio: str, id_cliente: int):
+        """Programa un evento de llegada para un servicio específico."""
+        tiempo_entre_llegadas = self.generar_tiempo_entre_llegadas(servicio)
+        tiempo_llegada = self.tiempo_actual + tiempo_entre_llegadas
+        heapq.heappush(self.eventos, EventoLlegada(tiempo_llegada, servicio, id_cliente))
+
+    def procesar_evento_llegada(self, evento: EventoLlegada):
+        """Procesa un evento de llegada."""
+        servicio = evento.tipo_servicio
+        id_cliente = evento.id_cliente
+
+        # Incrementar contador de clientes
+        self.estadisticas[servicio]['clientes_totales'] += 1
+
+        # Buscar un servidor disponible
+        servidor_disponible = None
+        for i in range(self.parametros['num_servidores'][servicio]):
+            if not self.servidores_ocupados.get((servicio, i), False):
+                servidor_disponible = i
+                break
+
+        if servidor_disponible is not None:
+            # Si hay un servidor disponible, el cliente comienza a ser atendido
+            self.servidores_ocupados[(servicio, servidor_disponible)] = True
+
+            # Actualizar estadísticas de ocupación
+            self.actualizar_estadisticas_ocupacion(servicio)
+            self.estadisticas[servicio]['servidores_ocupados_actual'] += 1
+            self.estadisticas[servicio]['ultimo_cambio_estado'] = self.tiempo_actual
+
+            # Programar evento de salida
+            tiempo_servicio = self.generar_tiempo_servicio(servicio)
+            tiempo_salida = self.tiempo_actual + tiempo_servicio
+            heapq.heappush(self.eventos, EventoSalida(tiempo_salida, servicio, servidor_disponible, id_cliente))
+
+            # Guardar tiempo de inicio de servicio (sin espera en cola)
+            self.estadisticas[servicio]['tiempo_inicio_servicio'][id_cliente] = self.tiempo_actual
+
+            # Registrar estado del sistema
+            self.registrar_estado(
+                f"Cliente {id_cliente} llega al servicio {servicio} y es atendido por el servidor {servidor_disponible}")
+        else:
+            # Si no hay servidores disponibles, el cliente se une a la cola
+            self.clientes_en_cola[servicio].append(id_cliente)
+
+            # Guardar tiempo de inicio de espera
+            self.estadisticas[servicio]['tiempo_inicio_servicio'][id_cliente] = self.tiempo_actual
+
+            # Registrar estado del sistema
+            self.registrar_estado(
+                f"Cliente {id_cliente} llega al servicio {servicio} y se une a la cola. Cola actual: {len(self.clientes_en_cola[servicio])}")
+
+        # Programar próxima llegada para este tipo de servicio
+        self.programar_evento_llegada(servicio, id_cliente + 1)
+
+    def procesar_evento_salida(self, evento: EventoSalida):
+        """Procesa un evento de salida."""
+        servicio = evento.tipo_servicio
+        id_servidor = evento.id_servidor
+        id_cliente = evento.id_cliente
+
+        # Registrar estadísticas de tiempo de espera
+        tiempo_inicio = self.estadisticas[servicio]['tiempo_inicio_servicio'].pop(id_cliente, self.tiempo_actual)
+        tiempo_espera = self.tiempo_actual - tiempo_inicio
+        self.estadisticas[servicio]['tiempo_espera_total'] += tiempo_espera
+
+        # Registrar estado del sistema
+        self.registrar_estado(
+            f"Cliente {id_cliente} termina en el servicio {servicio} (servidor {id_servidor}). Tiempo de servicio: {tiempo_espera:.2f}")
+
+        # Verificar si hay clientes en cola
+        if self.clientes_en_cola[servicio]:
+            # Si hay clientes en cola, el siguiente cliente comienza a ser atendido
+            siguiente_cliente = self.clientes_en_cola[servicio].pop(0)
+
+            # Calcular tiempo de espera en cola
+            tiempo_inicio_espera = self.estadisticas[servicio]['tiempo_inicio_servicio'].pop(siguiente_cliente,
+                                                                                             self.tiempo_actual)
+            tiempo_espera_cola = self.tiempo_actual - tiempo_inicio_espera
+            self.estadisticas[servicio]['tiempo_espera_total'] += tiempo_espera_cola
+
+            # Programar evento de salida para el siguiente cliente
+            tiempo_servicio = self.generar_tiempo_servicio(servicio)
+            tiempo_salida = self.tiempo_actual + tiempo_servicio
+            heapq.heappush(self.eventos, EventoSalida(tiempo_salida, servicio, id_servidor, siguiente_cliente))
+
+            # Registrar estado del sistema
+            self.registrar_estado(
+                f"Cliente {siguiente_cliente} comienza a ser atendido en el servicio {servicio} (servidor {id_servidor}) después de esperar {tiempo_espera_cola:.2f}")
+        else:
+            # Si no hay clientes en cola, el servidor queda libre
+            self.servidores_ocupados[(servicio, id_servidor)] = False
+
+            # Actualizar estadísticas de ocupación
+            self.actualizar_estadisticas_ocupacion(servicio)
+            self.estadisticas[servicio]['servidores_ocupados_actual'] -= 1
+            self.estadisticas[servicio]['ultimo_cambio_estado'] = self.tiempo_actual
+
+    def actualizar_estadisticas_ocupacion(self, servicio: str):
+        """Actualiza las estadísticas de ocupación de los servidores."""
+        tiempo_desde_ultimo_cambio = self.tiempo_actual - self.estadisticas[servicio]['ultimo_cambio_estado']
+        self.estadisticas[servicio]['tiempo_ocupacion_total'] += tiempo_desde_ultimo_cambio * \
+                                                                 self.estadisticas[servicio][
+                                                                     'servidores_ocupados_actual']
+
+    def registrar_estado(self, descripcion: str):
+        """Registra el estado actual del sistema."""
+        estado = {
+            'tiempo': self.tiempo_actual,
+            'descripcion': descripcion,
+            'colas': {servicio: len(cola) for servicio, cola in self.clientes_en_cola.items()},
+            'servidores_ocupados': sum(1 for ocupado in self.servidores_ocupados.values() if ocupado)
+        }
+        self.estado_sistema.append(estado)
+
+    def ejecutar_simulacion(self, n_eventos: int, mostrar_progreso: bool = True):
+        """Ejecuta la simulación por un número determinado de eventos."""
+        # Programar eventos iniciales de llegada
+        for servicio in self.parametros['servicios']:
+            self.programar_evento_llegada(servicio, 0)
+
+        # Procesar eventos hasta alcanzar n_eventos
+        contador_eventos = 0
+        inicio_tiempo = time.time()
+
+        while contador_eventos < n_eventos and self.eventos:
+            # Obtener el próximo evento
+            evento = heapq.heappop(self.eventos)
+
+            # Actualizar tiempo actual
+            self.tiempo_actual = evento.tiempo
+
+            # Procesar evento según su tipo
+            if isinstance(evento, EventoLlegada):
+                self.procesar_evento_llegada(evento)
+            elif isinstance(evento, EventoSalida):
+                self.procesar_evento_salida(evento)
+
+            contador_eventos += 1
+
+            # Mostrar progreso si se solicita
+            if mostrar_progreso and contador_eventos % (n_eventos // 10) == 0:
+                porcentaje = (contador_eventos / n_eventos) * 100
+                tiempo_transcurrido = time.time() - inicio_tiempo
+                print(
+                    f"Completado: {porcentaje:.1f}% ({contador_eventos}/{n_eventos}) - Tiempo: {tiempo_transcurrido:.2f}s")
+
+        # Actualizar estadísticas finales
+        for servicio in self.parametros['servicios']:
+            self.actualizar_estadisticas_ocupacion(servicio)
+
+        return self.calcular_resultados()
+
+    def calcular_resultados(self) -> Dict:
+        """Calcula y devuelve los resultados de la simulación."""
+        resultados = {}
+
+        for servicio in self.parametros['servicios']:
+            clientes_totales = self.estadisticas[servicio]['clientes_totales']
+            num_servidores = self.parametros['num_servidores'][servicio]
+
+            if clientes_totales > 0:
+                tiempo_espera_promedio = self.estadisticas[servicio]['tiempo_espera_total'] / clientes_totales
+            else:
+                tiempo_espera_promedio = 0.0
+
+            if self.tiempo_actual > 0 and num_servidores > 0:
+                porcentaje_ocupacion = (self.estadisticas[servicio]['tiempo_ocupacion_total'] /
+                                        (self.tiempo_actual * num_servidores)) * 100
+            else:
+                porcentaje_ocupacion = 0.0
+
+            resultados[servicio] = {
+                'tiempo_espera_promedio': tiempo_espera_promedio,
+                'porcentaje_ocupacion': porcentaje_ocupacion,
+                'clientes_totales': clientes_totales
+            }
+
+        return resultados
+
+    def mostrar_resultados(self, resultados: Dict):
+        """Muestra los resultados de la simulación."""
+        print("\n=== RESULTADOS DE LA SIMULACIÓN ===")
+        print(f"Tiempo total simulado: {self.tiempo_actual:.2f} horas")
+        print("-----------------------------------")
+
+        datos = []
+        for servicio, res in resultados.items():
+            datos.append({
+                'Servicio': servicio,
+                'Tiempo de Espera Promedio (min)': res['tiempo_espera_promedio'] * 60,  # Convertir a minutos
+                'Porcentaje de Ocupación (%)': res['porcentaje_ocupacion'],
+                'Clientes Atendidos': res['clientes_totales']
+            })
+
+        df = pd.DataFrame(datos)
+        print(df.to_string(index=False))
+
+    def mostrar_estado_sistema(self, inicio: int = 0, fin: Optional[int] = None):
+        """Muestra el estado del sistema para un rango de eventos."""
+        if fin is None:
+            fin = len(self.estado_sistema)
+
+        if inicio >= len(self.estado_sistema) or inicio < 0:
+            print("Índice de inicio fuera de rango")
+            return
+
+        fin = min(fin, len(self.estado_sistema))
+
+        print("\n=== ESTADO DEL SISTEMA ===")
+        print(f"Mostrando eventos {inicio} a {fin - 1} de {len(self.estado_sistema)} eventos totales")
+        print("-----------------------------------")
+
+        # Mostrar cabecera
+        if inicio == 0:
+            print("CABECERA:")
+            for i in range(min(5, fin)):
+                e = self.estado_sistema[i]
+                print(f"[{i}] Tiempo: {e['tiempo']:.2f}, {e['descripcion']}")
+            print("...")
+
+        # Mostrar rango solicitado
+        if inicio < fin:
+            print(f"EVENTOS {inicio} a {fin - 1}:")
+            for i in range(inicio, fin):
+                e = self.estado_sistema[i]
+                print(f"[{i}] Tiempo: {e['tiempo']:.2f}, {e['descripcion']}")
+
+        # Mostrar último evento
+        ultimo_idx = len(self.estado_sistema) - 1
+        if fin <= ultimo_idx:
+            print("\nÚLTIMO EVENTO:")
+            e = self.estado_sistema[ultimo_idx]
+            print(f"[{ultimo_idx}] Tiempo: {e['tiempo']:.2f}, {e['descripcion']}")
+
+    def visualizar_resultados(self, resultados: Dict):
+        """Visualiza los resultados de la simulación con gráficos."""
+        servicios = list(resultados.keys())
+        tiempos_espera = [resultados[s]['tiempo_espera_promedio'] * 60 for s in servicios]  # Convertir a minutos
+        ocupacion = [resultados[s]['porcentaje_ocupacion'] for s in servicios]
+
+        fig, (ax1, ax2) = plt.subplots(2, 1, figsize=(10, 8))
+
+        # Gráfico de tiempo de espera promedio
+        ax1.bar(servicios, tiempos_espera, color='skyblue')
+        ax1.set_title('Tiempo de Espera Promedio por Servicio')
+        ax1.set_ylabel('Tiempo (minutos)')
+        ax1.grid(axis='y', linestyle='--', alpha=0.7)
+
+        for i, v in enumerate(tiempos_espera):
+            ax1.text(i, v + 0.3, f'{v:.2f}', ha='center')
+
+        # Gráfico de porcentaje de ocupación
+        ax2.bar(servicios, ocupacion, color='lightgreen')
+        ax2.set_title('Porcentaje de Ocupación por Servicio')
+        ax2.set_ylabel('Ocupación (%)')
+        ax2.grid(axis='y', linestyle='--', alpha=0.7)
+
+        for i, v in enumerate(ocupacion):
+            ax2.text(i, v + 1, f'{v:.2f}%', ha='center')
+
+        plt.tight_layout()
+        plt.show()
+
+
+def simular_con_parametro_adicional(parametros_base: Dict, servicio: str, parametro: str, valor_nuevo: int) -> Dict:
+    """Simula con un parámetro modificado y devuelve los resultados."""
+    # Crear una copia de los parámetros base
+    parametros_nuevos = {k: v.copy() if isinstance(v, dict) else v for k, v in parametros_base.items()}
+
+    # Modificar el parámetro específico
+    parametros_nuevos[parametro][servicio] = valor_nuevo
+
+    # Crear y ejecutar la simulación
+    print(f"\n=== SIMULACIÓN CON {parametro}['{servicio}'] = {valor_nuevo} ===")
+    simulacion = SimulacionBanco(parametros_nuevos)
+    resultados = simulacion.ejecutar_simulacion(n_eventos=10000, mostrar_progreso=False)
+    simulacion.mostrar_resultados(resultados)
+
+    return resultados
+
+
+def main():
+    # Definir parámetros del sistema
+    parametros = {
+        'servicios': ['Cajas', 'Atención Personalizada', 'Tarjeta de Crédito', 'Plazo Fijo', 'Préstamos'],
+        'tasas_llegada': {  # Clientes por hora
+            'Cajas': 30,
+            'Atención Personalizada': 12,
+            'Tarjeta de Crédito': 6,
+            'Plazo Fijo': 4,
+            'Préstamos': 10
+        },
+        'tasas_servicio': {  # Clientes por hora por servidor
+            'Cajas': 10,
+            'Atención Personalizada': 5,
+            'Tarjeta de Crédito': 3,
+            'Plazo Fijo': 2,
+            'Préstamos': 4
+        },
+        'num_servidores': {
+            'Cajas': 4,
+            'Atención Personalizada': 3,
+            'Tarjeta de Crédito': 2,
+            'Plazo Fijo': 1,
+            'Préstamos': 2
+        }
+    }
+
+    # Solicitar parámetros al usuario
+    print("=== SIMULACIÓN DE LÍNEAS DE ESPERA - BANCO VILLA ===")
+    print("\nParámetros actuales:")
+    for servicio in parametros['servicios']:
+        print(f"- {servicio}: {parametros['num_servidores'][servicio]} servidores, " +
+              f"tasa llegada: {parametros['tasas_llegada'][servicio]}/h, " +
+              f"tasa servicio: {parametros['tasas_servicio'][servicio]}/h por servidor")
+
+    modificar = input("\n¿Desea modificar algún parámetro? (s/n): ").lower() == 's'
+
+    if modificar:
+        for servicio in parametros['servicios']:
+            print(f"\nParámetros para {servicio}:")
+            tasa_llegada = input(f"  Tasa de llegada (actual: {parametros['tasas_llegada'][servicio]}/h): ")
+            if tasa_llegada:
+                parametros['tasas_llegada'][servicio] = float(tasa_llegada)
+
+            tasa_servicio = input(f"  Tasa de servicio (actual: {parametros['tasas_servicio'][servicio]}/h): ")
+            if tasa_servicio:
+                parametros['tasas_servicio'][servicio] = float(tasa_servicio)
+
+            num_servidores = input(f"  Número de servidores (actual: {parametros['num_servidores'][servicio]}): ")
+            if num_servidores:
+                parametros['num_servidores'][servicio] = int(num_servidores)
+
+    # Solicitar número de eventos a simular
+    n_eventos_str = input("\nNúmero de eventos a simular (ej: 10000): ")
+    n_eventos = int(n_eventos_str) if n_eventos_str else 10000
+
+    # Crear y ejecutar simulación
+    simulacion = SimulacionBanco(parametros)
+    resultados = simulacion.ejecutar_simulacion(n_eventos)
+    simulacion.mostrar_resultados(resultados)
+
+    # Visualizar resultados con gráficos
+    visualizar = input("\n¿Desea visualizar los resultados gráficamente? (s/n): ").lower() == 's'
+    if visualizar:
+        simulacion.visualizar_resultados(resultados)
+
+    # Mostrar estado del sistema
+    mostrar_estado = input("\n¿Desea ver el estado del sistema? (s/n): ").lower() == 's'
+    if mostrar_estado:
+        inicio = int(input("Mostrar desde el evento (índice): ") or 0)
+        n_mostrar = int(input("Número de eventos a mostrar (máx 300): ") or 300)
+        fin = inicio + min(n_mostrar, 300)
+        simulacion.mostrar_estado_sistema(inicio, fin)
+
+    # Simular escenario con un quinto cajero
+    comparar_cajeros = input("\n¿Desea simular el escenario con un quinto cajero? (s/n): ").lower() == 's'
+    if comparar_cajeros:
+        resultados_nuevo = simular_con_parametro_adicional(parametros, 'Cajas', 'num_servidores', 5)
+
+        # Comparar resultados
+        tiempo_original = resultados['Cajas']['tiempo_espera_promedio'] * 60  # minutos
+        tiempo_nuevo = resultados_nuevo['Cajas']['tiempo_espera_promedio'] * 60  # minutos
+
+        print(f"\n=== COMPARACIÓN DE ESCENARIOS ===")
+        print(f"Tiempo de espera promedio en Cajas (4 cajeros): {tiempo_original:.2f} minutos")
+        print(f"Tiempo de espera promedio en Cajas (5 cajeros): {tiempo_nuevo:.2f} minutos")
+        print(
+            f"Diferencia: {tiempo_original - tiempo_nuevo:.2f} minutos ({((tiempo_original - tiempo_nuevo) / tiempo_original * 100):.2f}% de reducción)")
+
+    print("\n=== FIN DE LA SIMULACIÓN ===")
+
+
+if __name__ == "__main__":
+    main()
