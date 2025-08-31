@@ -97,18 +97,20 @@ def generar_datos():
         
         # --- PASO 1: Generar la(s) serie(s) base U(0,1) ---
         base_U1 = np.random.rand(n)
-        
+
         if dist == "Uniforme":
             a = float(entry_a.get())
             b = float(entry_b.get())
             if a >= b: raise ValueError("Para la distribución Uniforme, 'a' debe ser menor que 'b'.")
             datos = transformar_a_uniforme(base_U1, a, b)
             current_dist_info = {"Distribución": "Uniforme", "Parámetros": f"a={a}, b={b}", "Muestra": n, "Intervalos": k}
+
         elif dist == "Exponencial":
             lmbda = float(entry_lambda.get())
             if lmbda <= 0: raise ValueError("Para la distribución Exponencial, 'λ' debe ser mayor que 0.")
             datos = transformar_a_exponencial(base_U1, lmbda)
             current_dist_info = {"Distribución": "Exponencial", "Parámetros": f"λ={lmbda}", "Muestra": n, "Intervalos": k}
+
         elif dist == "Normal":
             mu = float(entry_mu.get())
             sigma = float(entry_sigma.get())
