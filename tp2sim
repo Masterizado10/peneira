@@ -279,3 +279,298 @@ frame_grafico = ttk.Frame(results_frame)
 frame_grafico.pack(fill=BOTH, expand=True, pady=10, padx=5)
 
 root.mainloop()
+
+
++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+MODIFICACIONES 31/08/2025
+import numpy as np
+import pandas as pd
+import matplotlib
+matplotlib.use("TkAgg")  # Motor de renderizado para Tkinter
+import matplotlib.pyplot as plt
+from tkinter import *
+from tkinter import ttk, filedialog, messagebox
+from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
+from io import BytesIO
+
+# --- Variables de estado para mantener los datos generados ---
+current_data = None
+current_table = None
+current_fig = None
+current_dist_info = {}
+
+# --- Funciones de Lógica de Negocio (MODIFICADAS) ---
+
+def transformar_a_uniforme(U, a, b):
+    """
+    Transforma una serie U(0,1) a una distribución Uniforme [a, b].
+    Método: Transformada Inversa (escalado lineal).
+    Fórmula: X = a + (b - a) * U
+    """
+    return np.round(a + (b - a) * U, 4)
+
+def transformar_a_exponencial(U, lmbda):
+    """
+    Transforma una serie U(0,1) a una distribución Exponencial(λ).
+    Método: Transformada Inversa.
+    Fórmula: X = -ln(U) / λ
+    """
+    # Evitar log(0) si U llega a ser 0 exacto, aunque es muy improbable.
+    U = np.where(U == 0, 1e-10, U) 
+    return np.round(-np.log(U) / lmbda, 4)
+
+def transformar_a_normal(U1, U2, mu, sigma):
+    """
+    Transforma dos series U(0,1) a una distribución Normal(μ, σ).
+    Método: Transformada de Box-Muller.
+    Fórmula: Z = sqrt(-2 * ln(U1)) * cos(2 * π * U2), luego X = μ + Z * σ
+    """
+    # Evitar log(0) si U1 llega a ser 0 exacto.
+    U1 = np.where(U1 == 0, 1e-10, U1)
+    # Genera una serie de variables normales estándar N(0,1)
+    Z = np.sqrt(-2 * np.log(U1)) * np.cos(2 * np.pi * U2)
+    # Escala a la media y desviación estándar deseadas
+    return np.round(mu + Z * sigma, 4)
+
+def calcular_frecuencias(datos, k):
+    freq, bins = np.histogram(datos, bins=k)
+    intervalos = [f"[{round(bins[i],4)}, {round(bins[i+1],4)})" for i in range(len(bins)-1)]
+    total = len(datos)
+    fr_rel = (freq / total).round(6)
+    fr_acum = np.cumsum(fr_rel).round(6)
+    
+    tabla = pd.DataFrame({
+        "Intervalo": intervalos,
+        "Frecuencia Observada": freq,
+        "Frec. Relativa": fr_rel,
+        "Frec. Rel. Acumulada": fr_acum
+    })
+    return tabla, bins
+
+# --- Funciones de la Interfaz Gráfica (Controladores) ---
+def update_param_fields(event=None):
+    """Activa/desactiva los campos de parámetros según la distribución seleccionada."""
+    dist = combo_dist.get()
+    
+    for widget in (entry_a, entry_b, entry_lambda, entry_mu, entry_sigma):
+        widget.config(state="disabled")
+    for label in (lbl_a, lbl_b, lbl_lambda, lbl_mu, lbl_sigma):
+        label.config(state="disabled")
+
+    if dist == "Uniforme":
+        entry_a.config(state="normal"); lbl_a.config(state="normal")
+        entry_b.config(state="normal"); lbl_b.config(state="normal")
+    elif dist == "Exponencial":
+        entry_lambda.config(state="normal"); lbl_lambda.config(state="normal")
+    elif dist == "Normal":
+        entry_mu.config(state="normal"); lbl_mu.config(state="normal")
+        entry_sigma.config(state="normal"); lbl_sigma.config(state="normal")
+
+def generar_datos():
+    """Función principal que valida, genera datos y actualiza la GUI."""
+    global current_data, current_table, current_fig, current_dist_info
+    
+    try:
+        n = int(entry_n.get())
+        if not (1 <= n <= 1000000):
+            raise ValueError("El tamaño de muestra debe estar entre 1 y 1,000,000.")
+        
+        dist = combo_dist.get()
+        if not dist: raise ValueError("Debe seleccionar una distribución.")
+
+        k = int(combo_bins.get())
+        
+        # --- PASO 1: Generar la(s) serie(s) base U(0,1) ---
+        base_U1 = np.random.rand(n)
+
+        if dist == "Uniforme":
+            a = float(entry_a.get())
+            b = float(entry_b.get())
+            if a >= b: raise ValueError("Para la distribución Uniforme, 'a' debe ser menor que 'b'.")
+            datos = transformar_a_uniforme(base_U1, a, b)
+            current_dist_info = {"Distribución": "Uniforme", "Parámetros": f"a={a}, b={b}", "Muestra": n, "Intervalos": k}
+
+        elif dist == "Exponencial":
+            lmbda = float(entry_lambda.get())
+            if lmbda <= 0: raise ValueError("Para la distribución Exponencial, 'λ' debe ser mayor que 0.")
+            datos = transformar_a_exponencial(base_U1, lmbda)
+            current_dist_info = {"Distribución": "Exponencial", "Parámetros": f"λ={lmbda}", "Muestra": n, "Intervalos": k}
+
+        elif dist == "Normal":
+            mu = float(entry_mu.get())
+            sigma = float(entry_sigma.get())
+            if sigma <= 0: raise ValueError("Para la distribución Normal, 'σ' debe ser mayor que 0.")
+            # Box-Muller requiere una segunda serie U(0,1)
+            base_U2 = np.random.rand(n)
+            datos = transformar_a_normal(base_U1, base_U2, mu, sigma)
+            current_dist_info = {"Distribución": "Normal", "Parámetros": f"μ={mu}, σ={sigma}", "Muestra": n, "Intervalos": k}
+        
+        current_data = datos
+        
+        text_output.config(state="normal")
+        text_output.delete("1.0", END)
+        muestra_texto = " ".join(map(str, datos[:200]))
+        if n > 200: muestra_texto += " ..."
+        text_output.insert("1.0", muestra_texto)
+        text_output.config(state="disabled")
+        
+        tabla, bins = calcular_frecuencias(datos, k)
+        current_table = tabla
+        
+        for item in tree.get_children(): tree.delete(item)
+        for _, row in tabla.iterrows():
+            tree.insert("", "end", values=list(row))
+            
+        for widget in frame_grafico.winfo_children(): widget.destroy()
+
+        fig, ax = plt.subplots(figsize=(7, 5), dpi=100)
+        counts, _, patches = ax.hist(datos, bins=k, edgecolor="black", color="#3498db")
+        ax.set_title(f"Histograma de Frecuencias: {current_dist_info['Distribución']}", fontsize=14, pad=10)
+        ax.set_xlabel("Intervalos", fontsize=12)
+        ax.set_ylabel("Frecuencia Observada", fontsize=12)
+        ax.grid(axis='y', linestyle='--', alpha=0.7)
+        ax.set_xticks(bins)
+        ax.tick_params(axis='x', rotation=45, labelsize=8)
+        
+        for count, patch in zip(counts, patches):
+            if count > 0:
+                ax.annotate(str(int(count)), xy=(patch.get_x() + patch.get_width() / 2, patch.get_height()),
+                            xytext=(0, 5), textcoords="offset points", ha="center", va="bottom")
+
+        plt.tight_layout()
+        canvas = FigureCanvasTkAgg(fig, master=frame_grafico)
+        canvas.draw()
+        canvas.get_tk_widget().pack(fill=BOTH, expand=True)
+        current_fig = fig
+
+    except ValueError as e:
+        messagebox.showerror("Error de Entrada", str(e))
+    except Exception as e:
+        messagebox.showerror("Error Inesperado", f"Ocurrió un error: {e}")
+
+def guardar_excel():
+    if current_data is None:
+        messagebox.showwarning("Sin Datos", "Primero debe generar los datos antes de guardarlos.")
+        return
+
+    filepath = filedialog.asksaveasfilename(
+        defaultextension=".xlsx",
+        filetypes=[("Archivos de Excel", "*.xlsx"), ("Todos los archivos", "*.*")]
+    )
+    if not filepath: return
+
+    try:
+        with pd.ExcelWriter(filepath, engine='xlsxwriter') as writer:
+            df_resumen = pd.DataFrame([current_dist_info])
+            df_resumen.to_excel(writer, sheet_name="Resumen", index=False)
+            
+            df_datos = pd.DataFrame(current_data, columns=["Valor Aleatorio"])
+            df_datos.to_excel(writer, sheet_name="Datos_Generados", index=False)
+            
+            current_table.to_excel(writer, sheet_name="Tabla_de_Frecuencias", index=False)
+            
+            if current_fig:
+                img_data = BytesIO()
+                current_fig.savefig(img_data, format='png', dpi=120)
+                img_data.seek(0)
+                
+                worksheet = writer.sheets["Tabla_de_Frecuencias"]
+                worksheet.insert_image('G2', 'histograma.png', {'image_data': img_data})
+
+        messagebox.showinfo("Éxito", f"Archivo guardado exitosamente en:\n{filepath}")
+    except Exception as e:
+        messagebox.showerror("Error al Guardar", f"No se pudo guardar el archivo.\nError: {e}")
+
+
+# --- Configuración de la Ventana Principal y Estilos ---
+root = Tk()
+root.title("Generador Avanzado de Variables Aleatorias")
+root.geometry("1100x750")
+root.minsize(900, 600)
+
+style = ttk.Style()
+style.theme_use('clam')
+style.configure("Card.TLabelframe", padding=10)
+style.configure("Card.TLabelframe.Label", font=("Segoe UI", 11, "bold"))
+
+# --- Frame de Controles (Izquierda) ---
+controls_frame = ttk.Labelframe(root, text="Parámetros de Entrada", style="Card.TLabelframe")
+controls_frame.pack(side=LEFT, fill=Y, padx=10, pady=10)
+
+frm_general = ttk.Frame(controls_frame)
+frm_general.pack(fill=X, pady=5)
+ttk.Label(frm_general, text="Tamaño de Muestra (N):").grid(row=0, column=0, sticky=W, padx=5, pady=2)
+entry_n = ttk.Entry(frm_general, width=15)
+entry_n.grid(row=0, column=1, sticky=EW, padx=5, pady=2)
+ttk.Label(frm_general, text="Distribución:").grid(row=1, column=0, sticky=W, padx=5, pady=2)
+combo_dist = ttk.Combobox(frm_general, values=["Uniforme", "Exponencial", "Normal"], state="readonly")
+combo_dist.grid(row=1, column=1, sticky=EW, padx=5, pady=2)
+combo_dist.bind("<<ComboboxSelected>>", update_param_fields)
+
+frm_params = ttk.Frame(controls_frame)
+frm_params.pack(fill=X, pady=10)
+lbl_a = ttk.Label(frm_params, text="Parámetro 'a':"); entry_a = ttk.Entry(frm_params, width=15)
+lbl_b = ttk.Label(frm_params, text="Parámetro 'b':"); entry_b = ttk.Entry(frm_params, width=15)
+lbl_lambda = ttk.Label(frm_params, text="Parámetro 'λ' (lambda):"); entry_lambda = ttk.Entry(frm_params, width=15)
+lbl_mu = ttk.Label(frm_params, text="Media 'μ':"); entry_mu = ttk.Entry(frm_params, width=15)
+lbl_sigma = ttk.Label(frm_params, text="Desv. Estándar 'σ':"); entry_sigma = ttk.Entry(frm_params, width=15)
+lbl_a.grid(row=0, column=0, sticky=W, padx=5, pady=2); entry_a.grid(row=0, column=1, sticky=EW, padx=5, pady=2)
+lbl_b.grid(row=1, column=0, sticky=W, padx=5, pady=2); entry_b.grid(row=1, column=1, sticky=EW, padx=5, pady=2)
+lbl_lambda.grid(row=2, column=0, sticky=W, padx=5, pady=2); entry_lambda.grid(row=2, column=1, sticky=EW, padx=5, pady=2)
+lbl_mu.grid(row=3, column=0, sticky=W, padx=5, pady=2); entry_mu.grid(row=3, column=1, sticky=EW, padx=5, pady=2)
+lbl_sigma.grid(row=4, column=0, sticky=W, padx=5, pady=2); entry_sigma.grid(row=4, column=1, sticky=EW, padx=5, pady=2)
+update_param_fields()
+
+frm_hist = ttk.Frame(controls_frame)
+frm_hist.pack(fill=X, pady=5)
+ttk.Label(frm_hist, text="Nº de Intervalos:").grid(row=0, column=0, sticky=W, padx=5, pady=2)
+combo_bins = ttk.Combobox(frm_hist, values=[5, 10, 15, 20, 25], state="readonly", width=12)
+combo_bins.grid(row=0, column=1, sticky=EW, padx=5, pady=2)
+combo_bins.set(10)
+
+frm_buttons = ttk.Frame(controls_frame)
+frm_buttons.pack(fill=X, pady=20)
+btn_generate = ttk.Button(frm_buttons, text="Generar y Analizar", command=generar_datos)
+btn_generate.pack(fill=X, ipady=5, padx=5, pady=5)
+btn_save = ttk.Button(frm_buttons, text="Guardar en Excel", command=guardar_excel)
+btn_save.pack(fill=X, ipady=5, padx=5, pady=5)
+
+results_frame = ttk.Labelframe(root, text="Resultados", style="Card.TLabelframe")
+results_frame.pack(side=RIGHT, fill=BOTH, expand=True, padx=10, pady=10)
+
+ttk.Label(results_frame, text="Muestra de Datos Generados (primeros 200):").pack(anchor=W, padx=5)
+text_frame = ttk.Frame(results_frame)
+text_frame.pack(fill=X, pady=5, padx=5)
+text_output = Text(text_frame, height=4, width=80, wrap="word", state="disabled", font=("Courier New", 9))
+text_scroll = ttk.Scrollbar(text_frame, orient=HORIZONTAL, command=text_output.xview)
+text_output.config(xscrollcommand=text_scroll.set)
+text_output.pack(fill=X, expand=True)
+text_scroll.pack(fill=X)
+
+ttk.Label(results_frame, text="Tabla de Frecuencias:").pack(anchor=W, padx=5, pady=(10, 0))
+tree_frame = ttk.Frame(results_frame)
+tree_frame.pack(fill=X, pady=5, padx=5)
+cols = ("Intervalo", "Frec. Obs.", "Frec. Rel.", "Frec. Rel. Acum.")
+tree = ttk.Treeview(tree_frame, columns=cols, show="headings", height=6)
+for col in cols:
+    tree.heading(col, text=col)
+    tree.column(col, width=120, anchor=CENTER)
+tree.pack(side=LEFT, fill=X, expand=True)
+tree_scroll = ttk.Scrollbar(tree_frame, orient=VERTICAL, command=tree.yview)
+tree.config(yscrollcommand=tree_scroll.set)
+tree_scroll.pack(side=RIGHT, fill=Y)
+
+frame_grafico = ttk.Frame(results_frame)
+frame_grafico.pack(fill=BOTH, expand=True, pady=10, padx=5)
+
+root.mainloop()
+
+
+
+
+
+
+
+
+
+
